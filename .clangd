@@ -1,0 +1,4 @@
+Diagnostics:
+  ClangTidy:
+    Add: [bugprone-*, performance-*, readability-*, modernize-*]
+    Remove: [modernize-use-trailing-return-type, readability-identifier-length, readability-implicit-bool-conversion, bugprone-easily-swappable-parameters]
