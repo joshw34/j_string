@@ -14,13 +14,3 @@ typedef struct s_string {
   size_t len;
   size_t capacity;
 } j_string;
-
-const size_t MIN_CAPACITY = 32;
-
-// utils.c
-bool ensure_capacity_replace(j_string* str, size_t required);
-bool ensure_capacity_insert(j_string* str, size_t to_add);
-void free_if_true(bool flag, char* data);
-char* get_safe_new_data(const char* data, size_t len, const char* new_data, size_t nd_len,
-                        bool* free_temp);
-void str_reverse(char* str);

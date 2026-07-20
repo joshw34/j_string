@@ -9,27 +9,14 @@ INC_DIR = ./inc/
 LIB_DIR = ./lib/
 
 # C FILES
-SRC_FILES = $(SRC_DIR)js_array.c \
-						$(SRC_DIR)js_array_size.c \
-						$(SRC_DIR)js_array_sort.c \
-						$(SRC_DIR)js_carray.c \
-						$(SRC_DIR)js_dup.c \
-						$(SRC_DIR)js_empty_array.c \
-						$(SRC_DIR)js_free.c \
-						$(SRC_DIR)js_free_array.c \
-						$(SRC_DIR)js_itoa.c \
-						$(SRC_DIR)js_join.c \
-						$(SRC_DIR)js_new.c \
-						$(SRC_DIR)js_remove.c \
-						$(SRC_DIR)js_remove_back.c \
-						$(SRC_DIR)js_remove_front.c \
-						$(SRC_DIR)js_reverse.c \
-						$(SRC_DIR)js_substr.c \
-						$(SRC_DIR)js_tolower.c \
-						$(SRC_DIR)js_toupper.c \
-						$(SRC_DIR)js_trim.c \
-						$(SRC_DIR)js_uitoa.c \
-						$(SRC_DIR)utils.c \
+SRC_FILES = $(SRC_DIR)app_cpy_insert_push.c \
+						$(SRC_DIR)array.c \
+						$(SRC_DIR)clear_pop_remove.c \
+						$(SRC_DIR)getters.c \
+						$(SRC_DIR)misc.c \
+						$(SRC_DIR)new_dup_free_join_substr.c \
+						$(SRC_DIR)split.c \
+						$(SRC_DIR)trim.c \
 
 OBJ_FILES = $(SRC_FILES:$(SRC_DIR)%.c=$(OBJ_DIR)%.o)
 

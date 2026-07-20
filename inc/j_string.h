@@ -58,7 +58,7 @@ void js_free_array(j_string** array);
 // MUTATE ARRAYS
 js_result js_array_sort(j_string** array, sort_type type);
 
-// ACCESSORS
+// GETTERS
 size_t js_array_size(j_string** array);
 char js_at(const j_string* str, size_t index);
 const char* js_cstr(const j_string* str);

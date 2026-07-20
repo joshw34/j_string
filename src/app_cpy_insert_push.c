@@ -1,27 +1,66 @@
 #include "j_string.h"
 #include "j_string_internal.h"
 
-// ACCESS
-char js_at(const j_string* str, size_t index) {
-  if (index >= str->len) {
-    return '\0';
+// HELPERS
+
+/* Ensure str->data capacity when replacing the string data entirely */
+static bool ensure_capacity_replace(j_string* str, size_t required) {
+  if (str->capacity >= required) {
+    return true;
   }
-  return str->data[index];
+  size_t new_capacity = (str->capacity == 0) ? 1 : str->capacity;
+  while (new_capacity < required) {
+    if (new_capacity > SIZE_MAX / 2) {
+      return false;
+    }
+    new_capacity *= 2;
+  }
+  char* temp = realloc(str->data, new_capacity + 1);
+  if (!temp) {
+    return false;
+  }
+  str->data = temp;
+  str->capacity = new_capacity;
+  return true;
 }
 
-const char* js_cstr(const j_string* str) {
-  return str->data;
+/* Ensure str->data capacity when adding to str->data */
+static bool ensure_capacity_insert(j_string* str, size_t to_add) {
+  size_t required = str->len + to_add;
+  return ensure_capacity_replace(str, required);
 }
 
-size_t js_len(const j_string* str) {
-  return str->len;
+static bool self_ref_check(const char* data, size_t len, const char* new_data) {
+  return new_data >= data && new_data < data + len;
 }
 
-bool js_empty(const j_string* str) {
-  return str->len == 0;
+/* Returns a pointer safe to read new_data from even if str->data is later
+   reallocated/freed. Allocates and copies only if new_data aliases str->data;
+   sets *free_temp accordingly. */
+static char* get_safe_new_data(const char* data, size_t len, const char* new_data,
+                               size_t nd_len, bool* free_temp) {
+  char* temp = NULL;
+  if (self_ref_check(data, len, new_data)) {
+    temp = malloc(nd_len + 1);
+    if (!temp) {
+      return NULL;
+    }
+    memcpy(temp, new_data, nd_len);
+    temp[nd_len] = '\0';
+    *free_temp = true;
+  }
+  else {
+    temp = (char*)new_data;
+  }
+  return temp;
 }
 
-// STRING MUTATIONS
+static void free_if_true(bool flag, char* data) {
+  if (flag) {
+    free(data);
+  }
+}
+
 js_result js_app_back(j_string* str, const char* new_data) {
   if (!new_data || new_data[0] == '\0') {
     return NOOP;
@@ -65,19 +104,31 @@ js_result js_app_front(j_string* str, const char* new_data) {
   return SUCCESS;
 }
 
-js_result js_clear(j_string* str) {
-  if (str->len == 0) {
-    return NOOP;
-  }
-  memset(str->data, 0, str->capacity + 1);
-  str->len = 0;
-  return SUCCESS;
-}
-
 js_result js_cpy(j_string* dest, const char* src) {
   return js_ncpy(dest, src, SIZE_MAX);
 }
-#include <ctype.h>
+
+js_result js_ncpy(j_string* dest, const char* src, size_t n) {
+  if (!src || src[0] == '\0') {
+    return NOOP;
+  }
+  size_t src_len = strlen(src);
+  size_t cpy_len = (n < src_len) ? n : src_len;
+  bool free_temp = false;
+  char* temp = get_safe_new_data(dest->data, dest->len, src, cpy_len, &free_temp);
+  if (!temp) {
+    return ERR_ALLOC;
+  }
+  if (!ensure_capacity_replace(dest, cpy_len)) {
+    free_if_true(free_temp, temp);
+    return ERR_ALLOC;
+  }
+  memcpy(dest->data, temp, cpy_len);
+  dest->data[cpy_len] = '\0';
+  dest->len = cpy_len;
+  free_if_true(free_temp, temp);
+  return SUCCESS;
+}
 
 js_result js_insert(j_string* str, const char* new_data, size_t index) {
   if (!new_data || new_data[0] == '\0') {
@@ -107,25 +158,6 @@ js_result js_insert(j_string* str, const char* new_data, size_t index) {
   return SUCCESS;
 }
 
-js_result js_pop_back(j_string* str) {
-  if (str->len == 0) {
-    return NOOP;
-  }
-  str->data[str->len - 1] = '\0';
-  str->len--;
-  return SUCCESS;
-}
-
-js_result js_pop_front(j_string* str) {
-  if (str->len == 0) {
-    return NOOP;
-  }
-  memmove(str->data, str->data + 1, str->len - 1);
-  str->len--;
-  str->data[str->len] = '\0';
-  return SUCCESS;
-}
-
 js_result js_push_back(j_string* str, const char c) {
   if (c == '\0') {
     return ERR_INVALID_CHAR;
@@ -151,23 +183,4 @@ js_result js_push_front(j_string* str, const char c) {
   str->len++;
   str->data[str->len] = '\0';
   return SUCCESS;
-}
-
-j_string* js_new(const char* data) {
-  j_string* str = malloc(sizeof(j_string));
-  if (!str) {
-    return NULL;
-  }
-  str->len = data ? strlen(data) : 0;
-  str->capacity = (str->len <= MIN_CAPACITY) ? MIN_CAPACITY : str->len;
-  str->data = malloc(str->capacity + 1);
-  if (!str->data) {
-    js_free(str);
-    return NULL;
-  }
-  if (data) {
-    memcpy(str->data, data, str->len);
-  }
-  str->data[str->len] = '\0';
-  return str;
 }
